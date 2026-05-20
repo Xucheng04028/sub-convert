@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zod订阅转换</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0b1020;color:#f6f7f9;min-height:100vh;padding:20px}
+.container{max-width:700px;margin:40px auto}
+.card{background:#121a33;border-radius:14px;padding:26px;box-shadow:0 0 30px #0003}
+.title{text-align:center;margin-bottom:24px}
+.title h1{font-size:22px;margin-bottom:6px}
+.title p{color:#aaa;font-size:14px}
+.label{font-size:13px;color:#bbb;margin-bottom:8px}
+input{width:100%;padding:14px 16px;border-radius:10px;border:none;background:#1a2746;color:#fff;font-size:15px;outline:none;margin-bottom:16px}
+button{width:100%;padding:14px;border:none;border-radius:10px;background:#2d9c65;color:#fff;font-size:15px;font-weight:500;cursor:pointer}
+button:hover{background:#248a57}
+.api-group{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.api-btn{padding:10px;border-radius:8px;background:#1a2746;color:#ddd;text-align:center;cursor:pointer;border:2px solid transparent}
+.api-btn.active{border-color:#2d9c65;color:#2d9c65}
+.result{margin-top:20px;padding:16px;background:#1a2746;border-radius:10px;word-break:break-all}
+.result a{color:#2d9c65;text-decoration:none}
+.status{margin-top:10px;font-size:13px;color:#888;text-align:center}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="title">
+    <h1>Zod 订阅转换</h1>
+    <p>全协议支持 · 完整分流规则</p>
+  </div>
+  <div class="card">
+    <div class="label">选择后端</div>
+    <div class="api-group">
+      <div class="api-btn active" data-i="0">自建</div>
+      <div class="api-btn" data-i="1">备用</div>
+      <div class="api-btn" data-i="2">公共</div>
+    </div>
+
+    <div class="label">输入订阅地址（SSR/SS/Vmess/VLESS/Trojan）</div>
+    <input id="sub" placeholder="粘贴订阅链接">
+
+    <button onclick="generate()">生成转换订阅</button>
+
+    <div id="status" class="status"></div>
+    <div id="result" class="result" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const servers = [
+  "https://sub.zodx.eu.cc",
+  "https://delicate-union-4041.xch028-de6.workers.dev",
+  "https://api.asailor.org"
+];
+
+let current = 0;
+let loading = false;
+
+document.querySelectorAll('.api-btn').forEach((btn, i) => {
+  btn.onclick = () => {
+    current = i;
+    document.querySelectorAll('.api-btn').forEach((b, j) => b.classList.toggle('active', j === i));
+  };
+});
+
+async function generate() {
+  const url = document.getElementById('sub').value.trim();
+  if (!url) return alert('请输入订阅地址');
+  if (loading) return;
+
+  loading = true;
+  const status = document.getElementById('status');
+  const resBox = document.getElementById('result');
+  status.textContent = "正在转换...";
+  resBox.style.display = "none";
+
+  const target = `${servers[current]}?url=${encodeURIComponent(url)}`;
+
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(target, { signal: ctrl.signal });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      resBox.innerHTML = `<a href="${target}" target="_blank">${target}</a>`;
+      resBox.style.display = "block";
+      status.textContent = "✅ 转换成功";
+    } else {
+      status.textContent = "❌ 后端请求失败";
+    }
+  } catch (e) {
+    status.textContent = "❌ 连接超时或后端不可用";
+  }
+
+  loading = false;
+}
+</script>
+</body>
+</html>
